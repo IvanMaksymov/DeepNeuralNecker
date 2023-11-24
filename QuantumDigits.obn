@@ -1,0 +1,161 @@
+MODULE QuantumDigits;
+
+IMPORT Out, Files;
+
+CONST
+        
+    MAPHEIGHT* = 10;
+    MAPWIDTH* = 10;
+
+TYPE
+    Number = ARRAY 10,MAPHEIGHT,MAPWIDTH OF CHAR;
+    InputVec* = ARRAY MAPHEIGHT*MAPWIDTH+1 OF REAL;
+    InputMatr* = ARRAY MAPHEIGHT,MAPWIDTH OF INTEGER;
+
+VAR
+    M09, M09Test : Number;
+
+PROCEDURE DefineCharacters;
+
+VAR
+    f : Files.File;
+    r : Files.Rider;
+    src : ARRAY 128 OF CHAR;
+    i, j, cnt, k : INTEGER;
+
+BEGIN
+
+    FOR k := 1 TO 2 DO
+
+        CASE k OF
+                
+          1 : f := Files.Old("Necker1.cube");
+          | 2 : f := Files.Old("Necker2.cube");
+
+        END;
+
+        Files.Set(r, f, 0);
+        Files.ReadString(r, src);
+        (*Out.String(src);Out.Ln;*)
+        (*Out.Int(LEN(src),3);Out.Ln;*)
+        (*Out.Char(src[5]);Out.Ln;*)
+        Files.Close(f); 
+
+		(*Mind the last symbol of the row in the string!!!*)
+        cnt := 0;
+        FOR i := 0 TO MAPWIDTH-1 DO
+            FOR j := 0 TO MAPHEIGHT-1 DO
+               
+                 M09[k][i][j] := src[cnt];
+                 INC(cnt);
+                 (*Out.Char(M09[k][i][j]);Out.String(" ");*)
+
+            END;
+            (*Out.Ln;*)
+            INC(cnt)
+        END;
+
+    END;
+
+END DefineCharacters;
+
+PROCEDURE TestCharacters;
+
+VAR
+    f : Files.File;
+    r : Files.Rider;
+    src : ARRAY 128 OF CHAR;
+    i, j, cnt, k : INTEGER;
+
+BEGIN
+
+    FOR k := 1 TO 2 DO
+
+        CASE k OF
+                
+          1 : f := Files.Old("Necker.cube");
+          | 2 : f := Files.Old("Necker.cube");
+
+        END;
+
+        Files.Set(r, f, 0);
+        Files.ReadString(r, src);
+        (*Out.String(src);Out.Ln;*)
+        (*Out.Int(LEN(src),3);Out.Ln;*)
+        (*Out.Char(src[5]);Out.Ln;*)
+        Files.Close(f); 
+
+		(*Mind the last symbol of the row in the string!!!*)
+        cnt := 0;
+        FOR i := 0 TO MAPWIDTH-1 DO
+            FOR j := 0 TO MAPHEIGHT-1 DO
+               
+                 M09Test[k][i][j] := src[cnt];
+                 INC(cnt);
+                 (*Out.Char(M09[k][i][j]);Out.String(" ");*)
+
+            END;
+            (*Out.Ln;*)
+            INC(cnt)
+        END;
+
+    END;
+
+END TestCharacters;
+
+PROCEDURE InputCharacter* (VAR Input: InputVec; VAR Control: InputMatr; num: INTEGER; test: INTEGER);
+
+VAR
+    i, j, cnt : INTEGER;
+
+BEGIN
+
+    (*Out.Int(LEN(str),3);Out.Ln;*)
+
+	cnt := 1;
+    FOR i := 0 TO MAPHEIGHT-1 DO
+		FOR j := 0 TO MAPWIDTH-1 DO
+            
+            IF (test=0) THEN
+            
+	            IF (M09[num][i][j]="1") THEN   
+	        	
+	        		Input[cnt] := 1.0;
+	        		Control[i][j] := 1
+	        		
+	        	ELSE
+	        	
+	        		Input[cnt] := 0.0;
+	        		Control[i][j] := 0;
+	        	
+	        	END
+        	
+        	ELSE
+        	
+	            IF (M09Test[num][i][j]="1") THEN   
+	        	
+	        		Input[cnt] := 1.0;
+	        		Control[i][j] := 1
+	        		
+	        	ELSE
+	        	
+	        		Input[cnt] := 0.0;
+	        		Control[i][j] := 0;
+	        	
+	        	END        	
+        	
+        	END;
+        	
+        	INC(cnt)
+            
+         END
+	END
+
+END InputCharacter;    
+
+BEGIN
+
+    DefineCharacters;
+    TestCharacters
+
+END QuantumDigits.

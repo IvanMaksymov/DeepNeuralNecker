@@ -1,0 +1,425 @@
+MODULE DeepNeuralQuantumANU;
+
+IMPORT Math, Out, QuantumRandom, QuantumDigits, Activation;
+
+CONST
+
+    alpha = 0.01;
+	TRAINING = 2; (*NUMBER OF TRAINING SETS*)
+    NumberInput = QuantumDigits.MAPHEIGHT*QuantumDigits.MAPWIDTH;
+	NumberHidden1 = 20(*NumberInput*2*);
+	NumberHidden2 = 20(*NumberInput*2*);
+	NumberHidden3 = 20(*NumberInput*2*);
+	NumberOutput = TRAINING;
+	ITER = 1000; (*NUMBER OF EPOCHS*)
+
+VAR
+	i, j, k : INTEGER;
+	W1, dW1 : ARRAY NumberHidden1+1, NumberInput+1 OF REAL;
+	W2, dW2 : ARRAY NumberHidden2+1, NumberHidden1+1 OF REAL;
+	W3, dW3 : ARRAY NumberHidden3+1, NumberHidden2+1 OF REAL;
+	W4, dW4 : ARRAY NumberOutput+1, NumberHidden3+1 OF REAL;
+	
+	W1transp : ARRAY NumberInput+1, NumberHidden1+1 OF REAL;
+	W2transp : ARRAY NumberHidden1+1, NumberHidden2+1  OF REAL;
+	W3transp : ARRAY NumberHidden2+1, NumberHidden3+1  OF REAL;
+	W4transp : ARRAY NumberHidden3+1, NumberOutput+1  OF REAL;
+
+	y, v, e, delta : ARRAY NumberOutput+1 OF REAL;
+	y1, v1, e1, delta1 : ARRAY NumberHidden1+1 OF REAL;
+	y2, v2, e2, delta2 : ARRAY NumberHidden2+1 OF REAL;
+	y3, v3, e3, delta3 : ARRAY NumberHidden3+1 OF REAL;
+	
+	d : ARRAY NumberOutput+1, NumberOutput+1 OF REAL;
+
+	iteration, measurement : LONGINT;
+	trainingSet : INTEGER;
+
+	x : ARRAY NumberOutput+1 OF QuantumDigits.InputVec;
+	Control : QuantumDigits.InputMatr;
+	
+	SUM : REAL;	
+	CntRnd : LONGINT;
+
+(* MAIN PROGRAM*)
+
+BEGIN
+
+CntRnd := 0;
+FOR measurement := 1 TO 100 DO
+
+	(*#### INITIALISATION ####*)
+	
+	(*prepare inputs and outputs*)
+	FOR trainingSet := 1 TO TRAINING DO
+
+		FOR j := 1 TO TRAINING DO
+			
+			IF (j=trainingSet) THEN
+				
+				d[trainingSet][j] := 1.0	
+					
+			ELSE
+				
+				d[trainingSet][j] := 0.0
+				
+			END
+			
+		END;
+			
+		QuantumDigits.InputCharacter(x[trainingSet], Control, trainingSet, 0);
+		
+		(* test the training and traget sets *)
+		(*Out.String("The TRAINING digit is: ");Out.Int(trainingSet,1);Out.Ln;
+			
+  		FOR i := 0 TO QuantumDigits.MAPHEIGHT-1 DO
+			FOR j := 0 TO QuantumDigits.MAPWIDTH-1 DO
+				
+				IF (Control[i][j]=1) THEN
+					
+					Out.String("*")
+						
+				ELSE
+					
+					Out.String(" ")
+						
+				END
+				
+			END;Out.Ln
+		END;Out.Ln;		
+  			
+  		Out.String("Target: ");
+		FOR j := 1 TO NumberOutput DO
+		
+			Out.Real(d[trainingSet][j],3);Out.String(" ");
+			
+		END;Out.Ln;*)
+	
+	END;(*trainingSet*)
+    
+    (*hidden neurons*)
+    FOR i := 1 TO NumberHidden1 DO
+        FOR j := 1 TO NumberInput DO
+        	W1[i][j] := 2.0*QuantumRandom.ExperimentData(CntRnd) - 1.0;INC(CntRnd)
+        END
+    END;
+    
+    FOR i := 1 TO NumberHidden2 DO
+        FOR j := 1 TO NumberHidden1 DO
+        	W2[i][j] := 2.0*QuantumRandom.ExperimentData(CntRnd) - 1.0;INC(CntRnd)
+        END
+    END;
+    
+    FOR i := 1 TO NumberHidden3 DO
+        FOR j := 1 TO NumberHidden2 DO
+        	W3[i][j] := 2.0*QuantumRandom.ExperimentData(CntRnd) - 1.0;INC(CntRnd)
+        END
+    END;    
+    
+    (*output neurons*)
+	FOR i := 1 TO NumberOutput DO
+		FOR j := 1 TO NumberHidden3 DO	
+	    	W4[i][j] := 2.0*QuantumRandom.ExperimentData(CntRnd) - 1.0;INC(CntRnd)	
+	  	END
+	END;
+	
+	(*Out.String("CntRnd = ");Out.Int(CntRnd,12);Out.Ln;*)    
+
+	(*MAIN LOOP*)
+	FOR iteration := 1 TO ITER DO
+		FOR trainingSet := 1 TO TRAINING DO
+		
+			(*  v1=W1*x  *)
+			FOR i := 1 TO NumberHidden1 DO
+	        	SUM := 0.0;
+	        	FOR j := 1 TO NumberInput DO SUM := SUM+W1[i][j]*x[trainingSet][j] END;
+	        	v1[i] := SUM
+			END;
+			
+			(*  y1 = ReLU(v1)  *)
+			FOR i := 1 TO NumberHidden1 DO			
+				y1[i] := Activation.ReLU(v1[i])	
+			END;
+			
+			(*  v2=W2*y1  *) 
+			FOR i := 1 TO NumberHidden2 DO
+	        	SUM := 0.0;
+	        	FOR j := 1 TO NumberHidden1 DO SUM := SUM + W2[i][j]*y1[j] END;
+	        	v2[i] := SUM
+			END;
+
+			(*  y2 = ReLU(v2)  *)
+			FOR i := 1 TO NumberHidden2 DO			
+				y2[i] := Activation.ReLU(v2[i])	
+			END;
+			
+			(*  v3=W3*y2  *)
+			FOR i := 1 TO NumberHidden3 DO
+	        	SUM := 0.0;
+	        	FOR j := 1 TO NumberHidden2 DO SUM := SUM + W3[i][j]*y2[j] END;
+	        	v3[i] := SUM
+			END;
+
+			(*  y3 = ReLU(v3)  *)
+			FOR i := 1 TO NumberHidden3 DO
+				y3[i] := Activation.ReLU(v3[i])			
+			END;			
+			
+			(*  v=W4*y3  *)
+			FOR i := 1 TO NumberOutput DO
+	        	SUM := 0.0;
+	        	FOR j := 1 TO NumberHidden3 DO SUM := SUM + W4[i][j]*y3[j] END;
+	        	v[i] := SUM;	
+			END;			
+
+			(*  y  = Softmax(v)  *)
+			SUM := 0.0;	
+			FOR i := 1 TO NumberOutput DO  
+				SUM := SUM + Math.exp(v[i])		  
+			END;
+			
+			FOR i := 1 TO NumberOutput DO
+				y[i] := Math.exp(v[i])/SUM
+			END;
+			
+			(*  e = d - y;  delta = e  *)
+			FOR i := 1 TO NumberOutput DO
+				e[i] := d[trainingSet][i] - y[i];
+				delta[i] := e[i]
+			END;
+			
+			(*  e3 = W4'*delta  *)
+			FOR i := 1 TO NumberHidden3 DO
+        		FOR j := 1 TO NumberOutput DO
+        			W4transp[i][j] := W4[j][i]
+   				END
+   			END;	
+			
+			FOR i := 1 TO NumberHidden3 DO
+	        	SUM := 0.0;
+	        	FOR j := 1 TO NumberOutput DO SUM := SUM + W4transp[i][j]*delta[j] END;
+	        	e3[i] := SUM
+			END;			
+    		
+    		(*  delta3 = (v3 > 0).*e3  *)
+			FOR i := 1 TO NumberHidden3 DO
+				IF (v3[i] > 0.0) THEN
+					delta3[i] := e3[i]
+				ELSE
+					delta3[i] := 0.0
+				END
+			END;    		   		
+    		
+    		(*  e2 = W3'*delta3  *)
+			FOR i := 1 TO NumberHidden2 DO
+        		FOR j := 1 TO NumberHidden3 DO
+        			W3transp[i][j] := W3[j][i]
+   				END
+   			END;	
+			
+			FOR i := 1 TO NumberHidden2 DO
+	        	SUM := 0.0;
+	        	FOR j := 1 TO NumberHidden3 DO SUM := SUM + W3transp[i][j]*delta3[j] END;
+	        	e3[i] := SUM
+			END;			
+    		
+    		(*  delta2 = (v2 > 0).*e2  *)
+			FOR i := 1 TO NumberHidden2 DO
+				IF (v2[i] > 0.0) THEN
+					delta2[i] := e2[i]
+				ELSE
+					delta2[i] := 0.0
+				END
+			END;    		
+    		
+    		(*  e1 = W2'*delta2  *)
+			FOR i := 1 TO NumberHidden1 DO
+        		FOR j := 1 TO NumberHidden2 DO
+        			W2transp[i][j] := W2[j][i]
+   				END
+   			END;	
+			
+			FOR i := 1 TO NumberHidden1 DO
+	        	SUM := 0.0;
+	        	FOR j := 1 TO NumberHidden2 DO SUM := SUM + W2transp[i][j]*delta2[j] END;
+	        	e1[i] := SUM
+			END;
+
+    		(*  delta1 = (v1 > 0).*e1  *)
+			FOR i := 1 TO NumberHidden1 DO
+				IF (v1[i] > 0.0) THEN
+					delta1[i] := e1[i]
+				ELSE
+					delta1[i] := 0.0
+				END
+			END;			
+			
+			(*  dW4 = alpha*delta*y3'  *)
+			FOR i := 1 TO NumberOutput DO
+      			FOR j := 1 TO NumberHidden3 DO
+        			SUM := 0.0;
+        			FOR k := 1 TO 1 DO SUM := SUM+delta[i]*y3[j] END;
+        			dW4[i][j] := alpha*SUM
+      			END
+    		END;
+			
+			(*  W4  = W4 + dW4  *)
+			FOR i := 1 TO NumberOutput DO
+	        	FOR j := 1 TO NumberHidden3 DO 
+	        		W4[i][j] := W4[i][j] + dW4[i][j] 
+	        	END
+			END;			
+			
+			(*  dW3 = alpha*delta3*y2'  *)
+			FOR i := 1 TO NumberHidden3 DO
+      			FOR j := 1 TO NumberHidden2 DO
+        			SUM := 0.0;
+        			FOR k := 1 TO 1 DO SUM := SUM+delta3[i]*y2[j] END;
+        			dW3[i][j] := alpha*SUM
+      			END
+    		END;
+    		
+    		(*  W3  = W3 + dW3  *)
+			FOR i := 1 TO NumberHidden3 DO
+	        	FOR j := 1 TO NumberHidden2 DO 
+	        		W3[i][j] := W3[i][j] + dW3[i][j] 
+	        	END
+			END;    		
+    		
+    		(*  dW2 = alpha*delta2*y1'  *)
+			FOR i := 1 TO NumberHidden2 DO
+      			FOR j := 1 TO NumberHidden1 DO
+        			SUM := 0.0;
+        			FOR k := 1 TO 1 DO SUM := SUM+delta2[i]*y1[j] END;
+        			dW2[i][j] := alpha*SUM
+      			END
+    		END;
+    		
+    		(*  W2  = W2 + dW2  *)    		
+			FOR i := 1 TO NumberHidden2 DO
+	        	FOR j := 1 TO NumberHidden1 DO 
+	        		W2[i][j] := W2[i][j] + dW2[i][j] 
+	        	END
+			END;    					
+
+			(*  dW1 = alpha*delta1*x'  *)			
+			FOR i := 1 TO NumberHidden1 DO
+      			FOR j := 1 TO NumberInput DO
+        			SUM := 0.0;
+        			FOR k := 1 TO 1 DO SUM := SUM+delta1[i]*x[trainingSet][j] END;
+        			dW1[i][j] := alpha*SUM
+      			END
+    		END;
+			
+			(*  W1 = W1 + dW1  *)
+			FOR i := 1 TO NumberHidden1 DO
+	        	FOR j := 1 TO NumberInput DO 
+	        		W1[i][j] := W1[i][j] + dW1[i][j] 
+	        	END
+			END;
+	
+		END(*trainingSet*)
+	END;(*iteration*)
+	
+	(* test the trained output *)
+	(*Out.Ln;Out.Ln;Out.Ln;
+	Out.String("Output: ");
+	FOR i := 1 TO NumberOutput DO
+		
+		Out.Real(y[i],12);Out.String(" ");
+	
+	END;Out.Ln;*)	
+	
+	(* separator *)
+	(*Out.Ln;Out.Ln;Out.Ln;
+	Out.String("+++++++++++++++++++++++");Out.Ln;
+	Out.Ln;Out.Ln;Out.Ln;*)
+	
+	(* EXPLOITATION *)
+	FOR trainingSet := 1 TO 1(*TRAINING*) DO
+	
+		QuantumDigits.InputCharacter(x[trainingSet], Control, trainingSet, 1);
+
+		(* test the exploitation set *)
+		(*Out.String("The TEST digit is: ");Out.Ln;				
+  		FOR i := 0 TO QuantumDigits.MAPHEIGHT-1 DO
+			FOR j := 0 TO QuantumDigits.MAPWIDTH-1 DO
+				
+				IF (Control[i][j]=1) THEN
+					
+					Out.String("*")
+						
+				ELSE
+					
+					Out.String(" ")
+						
+				END
+				
+			END;Out.Ln
+		END;Out.Ln;*)
+		
+		(*  v1=W1*x  *)
+		FOR i := 1 TO NumberHidden1 DO
+			SUM := 0.0;
+			FOR j := 1 TO NumberInput DO SUM := SUM+W1[i][j]*x[trainingSet][j] END;
+			v1[i] := SUM
+		END;
+		
+		(*  y1 = ReLU(v1)  *)
+		FOR i := 1 TO NumberHidden1 DO			
+			y1[i] := Activation.ReLU(v1[i])			
+		END;
+		
+		(*  v2=W2*y1  *) 
+		FOR i := 1 TO NumberHidden2 DO
+			SUM := 0.0;
+			FOR j := 1 TO NumberHidden1 DO SUM := SUM + W2[i][j]*y1[j] END;
+			v2[i] := SUM
+		END;
+
+		(*  y2 = ReLU(v2)  *)
+		FOR i := 1 TO NumberHidden2 DO			
+			y2[i] := Activation.ReLU(v2[i])			
+		END;
+		
+		(*  v3=W3*y2  *)
+		FOR i := 1 TO NumberHidden3 DO
+			SUM := 0.0;
+			FOR j := 1 TO NumberHidden2 DO SUM := SUM + W3[i][j]*y2[j] END;
+			v3[i] := SUM
+		END;
+
+		(*  y3 = ReLU(v3)  *)
+		FOR i := 1 TO NumberHidden3 DO
+			y3[i] := Activation.ReLU(v3[i])			
+		END;			
+		
+		(*  v=W4*y3  *)
+		FOR i := 1 TO NumberOutput DO
+			SUM := 0.0;
+			FOR j := 1 TO NumberHidden3 DO SUM := SUM + W4[i][j]*y3[j] END;
+			v[i] := SUM
+		END;			
+
+		(*  y  = Softmax(v)  *)
+		SUM := 0.0;	
+		FOR i := 1 TO NumberOutput DO  
+			SUM := SUM + Math.exp(v[i])			  
+		END;
+		
+		FOR i := 1 TO NumberOutput DO
+			y[i] := Math.exp(v[i])/SUM
+		END;		
+		
+		(* The result of explitation *)
+		(*Out.String("Output: ");*)
+		FOR i := 1 TO NumberOutput DO
+		
+			Out.Real(y[i],12);Out.String(" ");
+	
+		END;Out.Ln     
+			
+	END
+
+END(*measurement*)
+END DeepNeuralQuantumANU.

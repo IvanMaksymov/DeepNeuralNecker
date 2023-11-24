@@ -7,7 +7,7 @@ physics and mathematics, and it includes no warranties or services.
 The author can be contacted by email ivan.maksymov [at] gmail.com.
 
 The source code files are written in Oberon-07.
-They were successfully compled using the following Oberon compilers:
+They were successfully compiled using the following Oberon compilers:
 
 1. https://github.com/vishaps/voc
 2. https://spivey.oriel.ox.ac.uk/corner/Oxford_Oberon-2_compiler

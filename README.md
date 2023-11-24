@@ -14,4 +14,7 @@ They were successfully compled using the following Oberon compilers:
 3. http://miasap.se/obnc/ OR https://github.com/GunterMueller/OBNC
 4. https://github.com/Vostok-space/vostok
 
+For example, in Linux/Unix use the commands: voc -m DeepNeuralQuantumANU.obn && 
+./DeepNeuralQuantumANU > a.out to compile and run the program, which will
+write all data to the file called a.out.
 
